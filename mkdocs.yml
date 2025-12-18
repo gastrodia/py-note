@@ -8,12 +8,12 @@ theme:
   name: material
   language: zh
   features:
-    - navigation.tabs
-    - navigation.sections
+    - navigation.expand
     - search.suggest
     - search.highlight
     - content.code.copy
     - content.code.annotate
+    
   palette:
     - scheme: default
       primary: indigo
@@ -36,8 +36,12 @@ plugins:
 
 # 导航配置
 nav:
-  - 快速开始:
-    - 首页: index.md
+  - 前言: index.md
+  - Python 语言基础学习:
+    - 基础:
+      - 基本数据类型: basic/data-types.md  # 去掉开头的/ + 补全.md后缀
+#  - Python 语言进阶:
+
 
 # 自定义Markdown扩展（不变）
 markdown_extensions:

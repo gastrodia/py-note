@@ -1,10 +1,7 @@
-# Python 学习笔记
+# 前言
 
-# Python 学习笔记
-# Python 学习笔记
-# Python 学习笔记
-# Python 学习笔记
-# Python 学习笔记
-# Python 学习笔记
+```python
+print("hello world")
+```
 
-123123
+## TODO
