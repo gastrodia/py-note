@@ -1,0 +1,62 @@
+site_name: Python学习笔记
+site_description: Python学习笔记
+site_author: gastrodia
+site_url: https://py.jiajiwei.top
+
+# 主题配置（不变）
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs
+    - navigation.sidebar
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: 切换到深色模式
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: 切换到浅色模式
+
+# 插件只保留官方稳定版
+plugins:
+  - search
+  - glightbox
+
+# 自定义Markdown扩展（不变）
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+
+# 关键：引入CodeHike和Pyodide的前端资源
+extra_javascript:
+  # CodeHike核心前端库（TS编译后的JS）
+  - https://cdn.jsdelivr.net/npm/codehike/+esm
+  # Pyodide（浏览器端Python）
+  - https://cdn.jsdelivr.net/npm/pyodide/pyodide.min.js
+  # 自定义Playground逻辑（下一步创建）
+  - playground.js
+
+# 自定义CSS（可选，美化CodeHike样式）
+# extra_css:
+#   - https://cdn.jsdelivr.net/npm/@codehike/core@0.8.1/dist/style.css
+#   - css/custom.css
+
+# 指定静态资源目录（确保js/css文件夹被识别）
+static_dirs:
+  - js
+  - css
