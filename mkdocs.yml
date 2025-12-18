@@ -9,10 +9,11 @@ theme:
   language: zh
   features:
     - navigation.tabs
-    - navigation.sidebar
+    - navigation.sections
     - search.suggest
     - search.highlight
     - content.code.copy
+    - content.code.annotate
   palette:
     - scheme: default
       primary: indigo
@@ -26,11 +27,17 @@ theme:
       toggle:
         icon: material/weather-night
         name: 切换到浅色模式
+  custom_dir: overrides
 
 # 插件只保留官方稳定版
 plugins:
   - search
   - glightbox
+
+# 导航配置
+nav:
+  - 快速开始:
+    - 首页: index.md
 
 # 自定义Markdown扩展（不变）
 markdown_extensions:
@@ -41,22 +48,7 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
-
-# 关键：引入CodeHike和Pyodide的前端资源
-extra_javascript:
-  # CodeHike核心前端库（TS编译后的JS）
-  - https://cdn.jsdelivr.net/npm/codehike/+esm
-  # Pyodide（浏览器端Python）
-  - https://cdn.jsdelivr.net/npm/pyodide/pyodide.min.js
-  # 自定义Playground逻辑（下一步创建）
-  - playground.js
-
-# 自定义CSS（可选，美化CodeHike样式）
-# extra_css:
-#   - https://cdn.jsdelivr.net/npm/@codehike/core@0.8.1/dist/style.css
-#   - css/custom.css
-
-# 指定静态资源目录（确保js/css文件夹被识别）
-static_dirs:
-  - js
-  - css
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.tabbed:
+      alternate_style: true

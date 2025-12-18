@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ 'assets/js/code-runner.js' | url }}"></script>
+{% endblock %}
+
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ 'assets/css/code-runner.css' | url }}">
+{% endblock %}
+
