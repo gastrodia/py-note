@@ -1,8 +1,4 @@
 {
-  "github": {
-    "silent": true
-  },
-  "buildCommand": "pip install -r requirements.txt && mkdocs build",
-  "outputDirectory": "site",
-  "framework": null
+  "buildCommand": "pip install -r requirements.txt && python3 -m mkdocs build",
+  "outputDirectory": "site"
 }
