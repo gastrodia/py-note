@@ -1,4 +1,3 @@
-// Pyodide Python 代码运行器 - 单例模式
 class CodeRunner {
     static instance = null;
     
@@ -12,11 +11,6 @@ class CodeRunner {
         
         CodeRunner.instance = this;
     }
-    
-    /**
-     * 获取单例实例
-     * @returns {CodeRunner}
-     */
     static getInstance() {
         if (!CodeRunner.instance) {
             CodeRunner.instance = new CodeRunner();
@@ -37,12 +31,23 @@ class CodeRunner {
             document.head.appendChild(script);
         });
     }
+
+    /**
+     * 更新输出区域内容
+     * @param {HTMLElement} element - 输出元素
+     * @param {string} type - 类型 (loading, success, error)
+     * @param {string} message - 消息内容 (可以是 HTML)
+     */
+    writeOutput(element, type, message) {
+        element.style.display = 'block';
+        element.innerHTML = `<div class="output-${type}">${message}</div>`;
+    }
     
     /**
      * 初始化 Pyodide
      * @returns {Promise}
      */
-    async initPyodide() {
+    async initPyodide(outputElement) {
         if (this.pyodideInstance) return this.pyodideInstance;
         if (this.isLoading) {
             // 等待加载完成
@@ -58,29 +63,37 @@ class CodeRunner {
             if (typeof loadPyodide === 'undefined') {
                 await this.loadPyodideScript();
             }
+            const loadText = '正在加载 Python 运行环境...'
             
             // 使用 alert$ Subject 发送加载状态
             if (window.alert$) {
-                window.alert$.next('正在加载 Python 运行环境...');
+                window.alert$.next(loadText);
             }
+            this.writeOutput(outputElement, 'loading', loadText);
             
             this.pyodideInstance = await loadPyodide({
                 indexURL: "https://cdn.jsdelivr.net/npm/pyodide/"
             });
-            
+
+
+            const okText = 'Python 环境加载完成！'
             // 发送加载成功消息
             if (window.alert$) {
-                window.alert$.next('Python 环境加载完成！');
+                window.alert$.next(okText);
             }
+            this.writeOutput(outputElement, 'loading', okText);
             
             return this.pyodideInstance;
         } catch (error) {
+            const errorText = 'Python 环境加载失败: ' + error.message;
+            
             console.error('Pyodide 加载失败:', error);
             
             // 发送错误消息
             if (window.alert$) {
-                window.alert$.next('Python 环境加载失败: ' + error.message);
+                window.alert$.next(errorText);
             }
+            this.writeOutput(outputElement, 'error', errorText);
             
             throw error;
         } finally {
@@ -100,11 +113,8 @@ class CodeRunner {
         button.disabled = true;
         button.title = '运行中...';
         
-        outputElement.innerHTML = '<div class="output-loading">正在执行代码...</div>';
-        outputElement.style.display = 'block';
-        
         try {
-            const pyodide = await this.initPyodide();
+            const pyodide = await this.initPyodide(outputElement);
             
             // 捕获输出
             let output = '';
@@ -114,7 +124,9 @@ class CodeRunner {
             pyodide.setStderr({
                 batched: (text) => { output += 'Error: ' + text + '\n'; }
             });
-            
+        
+            this.writeOutput(outputElement, 'loading', '正在执行代码...');
+
             // 运行代码
             try {
                 const result = await pyodide.runPythonAsync(code);
@@ -125,15 +137,15 @@ class CodeRunner {
                 }
                 
                 if (output.trim()) {
-                    outputElement.innerHTML = `<div class="output-success"><pre>${this.escapeHtml(output)}</pre></div>`;
+                    this.writeOutput(outputElement, 'success', `<pre>${this.escapeHtml(output)}</pre>`);
                 } else {
-                    outputElement.innerHTML = '<div class="output-success">代码执行成功（无输出）</div>';
+                    this.writeOutput(outputElement, 'success', '代码执行成功（无输出）');
                 }
             } catch (err) {
-                outputElement.innerHTML = `<div class="output-error"><strong>执行错误:</strong>\n<pre>${this.escapeHtml(err.message)}</pre></div>`;
+                this.writeOutput(outputElement, 'error', `<strong>执行错误:</strong>\n<pre>${this.escapeHtml(err.message)}</pre>`);
             }
         } catch (err) {
-            outputElement.innerHTML = `<div class="output-error"><strong>初始化错误:</strong>\n<pre>${this.escapeHtml(err.message)}</pre></div>`;
+            this.writeOutput(outputElement, 'error', `<strong>初始化错误:</strong>\n<pre>${this.escapeHtml(err.message)}</pre>`);
         } finally {
             // 恢复按钮状态
             button.classList.remove('running');
@@ -232,4 +244,3 @@ class CodeRunner {
 
 // 初始化单例实例
 CodeRunner.getInstance().init();
-
