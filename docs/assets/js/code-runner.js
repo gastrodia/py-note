@@ -39,8 +39,10 @@ class CodeRunner {
      * @param {string} message - 消息内容 (可以是 HTML)
      */
     writeOutput(element, type, message) {
-        element.style.display = 'block';
-        element.innerHTML = `<div class="output-${type}">${message}</div>`;
+        requestIdleCallback(() => {
+            element.style.display = 'block';
+            element.innerHTML = `<div class="output-${type}">${message}</div>`;
+        })
     }
     
     /**
