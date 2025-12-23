@@ -3,10 +3,22 @@
 {% block scripts %}
   {{ super() }}
   <script src="{{ 'assets/js/code-runner.js' | url }}"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ 'assets/js/sw.js' | url }}")
+          .then(registration => {
+            console.log('SW registered: ', registration);
+          })
+          .catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  </script>
 {% endblock %}
 
 {% block styles %}
   {{ super() }}
   <link rel="stylesheet" href="{{ 'assets/css/code-runner.css' | url }}">
 {% endblock %}
-

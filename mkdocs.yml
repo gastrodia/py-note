@@ -9,6 +9,7 @@ theme:
   language: zh
   features:
     - navigation.expand
+    - navigation.tabs
     - search.suggest
     - search.highlight
     - content.code.copy
@@ -37,9 +38,10 @@ plugins:
 # 导航配置
 nav:
   - 前言: index.md
-  - Python 语言基础学习:
+  - Python 语言基础:
     - 基础:
-      - 基本数据类型: basic/data-types.md  # 去掉开头的/ + 补全.md后缀
+      - 基本数据类型: python/basic/data-types.md  # 去掉开头的/ + 补全.md后缀
+#    - 函数
 #  - Python 语言进阶:
 
 
