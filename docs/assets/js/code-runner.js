@@ -33,7 +33,7 @@ class CodeRunner {
         
         try {
             // 先测试 sw.js 是否可访问
-            const swPath = '/sw.js';
+            const swPath = '/assets/js/sw.js';
             try {
                 const testResponse = await fetch(swPath, { method: 'HEAD' });
                 if (!testResponse.ok) {
@@ -49,7 +49,7 @@ class CodeRunner {
             
             console.log('[CodeRunner] ⏳ 正在注册 Service Worker...');
             const registration = await navigator.serviceWorker.register(swPath, {
-                scope: '/'
+                scope: '/assets/js/'
             });
             
             console.log('[CodeRunner] ✓ Service Worker 注册成功:', registration.scope);

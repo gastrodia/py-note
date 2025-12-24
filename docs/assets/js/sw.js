@@ -1,6 +1,15 @@
-// Service Worker for caching Pyodide resources
+// Service Worker for caching CDN resources
 // 缓存策略：Cache First (缓存优先，适合不经常变化的大文件)
-const CACHE_NAME = 'pyodide-cache-v1';
+const CACHE_NAME = 'cdn-cache-v1';
+
+// 需要缓存的 CDN 列表（可以是域名或 URL 模式）
+const CACHE_PATTERNS = [
+    'cdn.jsdelivr.net/npm/pyodide',
+    // 可以添加更多 CDN，例如：
+    // 'unpkg.com',
+    // 'cdnjs.cloudflare.com',
+    // 'cdn.bootcdn.net',
+];
 
 // 安装 Service Worker
 self.addEventListener('install', (event) => {
@@ -39,8 +48,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = event.request.url;
     
-    // 只处理 Pyodide 相关的 CDN 请求
-    if (url.includes('cdn.jsdelivr.net/npm/pyodide')) {
+    // 检查是否匹配任何一个 CDN 模式
+    const shouldCache = CACHE_PATTERNS.some(pattern => url.includes(pattern));
+    
+    if (shouldCache) {
         console.log('[SW] 🎯 拦截请求:', url.split('/').pop(), '| 类型:', event.request.destination || 'unknown');
         
         event.respondWith(
