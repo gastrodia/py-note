@@ -130,6 +130,7 @@ class CodeRunner {
             console.log(`共缓存 ${keys.length} 个文件：`);
             
             let totalSize = 0;
+            let opaqueCount = 0;
             for (const request of keys) {
                 const response = await cache.match(request);
                 if (response) {
@@ -140,7 +141,26 @@ class CodeRunner {
                     // 根据文件大小选择合适的单位
                     let sizeStr;
                     if (size === 0) {
-                        sizeStr = '0 字节 ⚠️';  // 警告：可能缓存失败
+                        // 对于 0 字节，尝试从 Content-Length 获取真实大小
+                        const contentLength = response.headers.get('content-length');
+                        if (contentLength) {
+                            const realSize = parseInt(contentLength);
+                            if (realSize > 0) {
+                                if (realSize < 1024) {
+                                    sizeStr = `${realSize} 字节 (opaque)`;
+                                } else if (realSize < 1024 * 1024) {
+                                    sizeStr = `${(realSize / 1024).toFixed(2)} KB (opaque)`;
+                                } else {
+                                    sizeStr = `${(realSize / 1024 / 1024).toFixed(2)} MB (opaque)`;
+                                }
+                            } else {
+                                sizeStr = '0 字节 ⚠️';
+                            }
+                        } else {
+                            // 无法获取大小，可能是 opaque 响应（跨域请求的正常现象）
+                            sizeStr = `已缓存 ✓ (opaque)`;
+                            opaqueCount++;
+                        }
                     } else if (size < 1024) {
                         sizeStr = `${size} 字节`;  // 小于1KB显示字节
                     } else if (size < 1024 * 1024) {
@@ -153,7 +173,7 @@ class CodeRunner {
                 }
             }
             
-            console.log(`总大小: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+            console.log(`总大小: ${(totalSize / 1024 / 1024).toFixed(2)} MB${opaqueCount > 0 ? ` (不含 ${opaqueCount} 个 opaque 文件)` : ''}`);
             console.log('========================');
             
             return {

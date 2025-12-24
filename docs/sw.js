@@ -96,9 +96,14 @@ self.addEventListener('fetch', (event) => {
                         const responseToCache = response.clone();
                         
                         try {
+                            // 获取内容大小信息
+                            const contentLength = response.headers.get('content-length');
+                            const sizeInfo = contentLength ? `${(parseInt(contentLength) / 1024).toFixed(2)} KB` : 'unknown';
+                            
                             // 使用 URL 作为缓存键，更稳定
                             await cache.put(url, responseToCache);
                             console.log('[SW] ✓ 已缓存:', url.split('/').pop(), 
+                                       '| 大小:', sizeInfo,
                                        '| 类型:', response.type, 
                                        '| 状态:', response.status);
                             
