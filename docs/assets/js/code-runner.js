@@ -8,183 +8,14 @@ class CodeRunner {
         
         this.pyodideInstance = null;
         this.isLoading = false;
-        this.serviceWorkerReady = false;
         
         CodeRunner.instance = this;
-        
-        // 注册 Service Worker
-        this.registerServiceWorker();
     }
     static getInstance() {
         if (!CodeRunner.instance) {
             CodeRunner.instance = new CodeRunner();
         }
         return CodeRunner.instance;
-    }
-    
-    /**
-     * 注册 Service Worker 以缓存 Pyodide 资源
-     */
-    async registerServiceWorker() {
-        if (!('serviceWorker' in navigator)) {
-            console.warn('[CodeRunner] 当前浏览器不支持 Service Worker');
-            return false;
-        }
-        
-        try {
-            // 先测试 sw.js 是否可访问
-            const swPath = '/sw.js';
-            try {
-                const testResponse = await fetch(swPath, { method: 'HEAD' });
-                if (!testResponse.ok) {
-                    console.error('[CodeRunner] ✗ 无法访问 sw.js 文件，HTTP 状态:', testResponse.status);
-                    console.error('[CodeRunner] 请确保 sw.js 在网站根目录');
-                    return false;
-                }
-            } catch (fetchError) {
-                console.error('[CodeRunner] ✗ 无法访问 sw.js 文件:', fetchError.message);
-                console.error('[CodeRunner] 请在浏览器中访问', window.location.origin + swPath, '检查文件是否存在');
-                return false;
-            }
-            
-            console.log('[CodeRunner] ⏳ 正在注册 Service Worker...');
-            const registration = await navigator.serviceWorker.register(swPath, {
-                scope: '/'
-            });
-            
-            console.log('[CodeRunner] ✓ Service Worker 注册成功:', registration.scope);
-            console.log('[CodeRunner] 注册对象:', registration);
-            
-            // 等待 Service Worker 激活
-            await navigator.serviceWorker.ready;
-            console.log('[CodeRunner] ✓ Service Worker 已就绪');
-            
-            // 检查是否已经有 controller（页面是否被 Service Worker 接管）
-            if (navigator.serviceWorker.controller) {
-                this.serviceWorkerReady = true;
-                console.log('[CodeRunner] ✓ Service Worker 已接管页面，资源将从缓存加载');
-            } else {
-                // 首次访问，Service Worker 尚未接管页面
-                // 这是正常的，需要刷新页面后才能启用缓存
-                this.serviceWorkerReady = false;
-                console.log('[CodeRunner] ℹ Service Worker 已注册但未接管当前页面');
-                console.log('[CodeRunner] 💡 刷新页面（F5）后将启用缓存加速');
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('[CodeRunner] ✗ Service Worker 注册失败:', error);
-            console.error('[CodeRunner] 错误详情:', error.message);
-            return false;
-        }
-    }
-    
-    /**
-     * 清理缓存（用于调试或强制更新）
-     * 可在浏览器控制台调用: CodeRunner.getInstance().clearCache()
-     */
-    async clearCache() {
-        if (!('serviceWorker' in navigator)) {
-            console.warn('当前浏览器不支持 Service Worker');
-            return false;
-        }
-        
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            const messageChannel = new MessageChannel();
-            
-            return new Promise((resolve) => {
-                messageChannel.port1.onmessage = (event) => {
-                    if (event.data.success) {
-                        console.log('✓ Pyodide 缓存已清理');
-                        resolve(true);
-                    }
-                };
-                
-                registration.active.postMessage(
-                    { type: 'CLEAR_CACHE' },
-                    [messageChannel.port2]
-                );
-            });
-        } catch (error) {
-            console.error('清理缓存失败:', error);
-            return false;
-        }
-    }
-    
-    /**
-     * 查看缓存状态
-     * 可在浏览器控制台调用: CodeRunner.getInstance().getCacheInfo()
-     */
-    async getCacheInfo() {
-        if (!('caches' in window)) {
-            console.warn('当前浏览器不支持 Cache API');
-            return null;
-        }
-        
-        try {
-            const cache = await caches.open('cache-v1');
-            const keys = await cache.keys();
-            
-            console.log('=== Pyodide 缓存状态 ===');
-            console.log(`共缓存 ${keys.length} 个文件：`);
-            
-            let totalSize = 0;
-            let opaqueCount = 0;
-            for (const request of keys) {
-                const response = await cache.match(request);
-                if (response) {
-                    const blob = await response.blob();
-                    const size = blob.size;
-                    totalSize += size;
-                    
-                    // 根据文件大小选择合适的单位
-                    let sizeStr;
-                    if (size === 0) {
-                        // 对于 0 字节，尝试从 Content-Length 获取真实大小
-                        const contentLength = response.headers.get('content-length');
-                        if (contentLength) {
-                            const realSize = parseInt(contentLength);
-                            if (realSize > 0) {
-                                if (realSize < 1024) {
-                                    sizeStr = `${realSize} 字节 (opaque)`;
-                                } else if (realSize < 1024 * 1024) {
-                                    sizeStr = `${(realSize / 1024).toFixed(2)} KB (opaque)`;
-                                } else {
-                                    sizeStr = `${(realSize / 1024 / 1024).toFixed(2)} MB (opaque)`;
-                                }
-                            } else {
-                                sizeStr = '0 字节 ⚠️';
-                            }
-                        } else {
-                            // 无法获取大小，可能是 opaque 响应（跨域请求的正常现象）
-                            sizeStr = `已缓存 ✓ (opaque)`;
-                            opaqueCount++;
-                        }
-                    } else if (size < 1024) {
-                        sizeStr = `${size} 字节`;  // 小于1KB显示字节
-                    } else if (size < 1024 * 1024) {
-                        sizeStr = `${(size / 1024).toFixed(2)} KB`;  // 小于1MB显示KB
-                    } else {
-                        sizeStr = `${(size / 1024 / 1024).toFixed(2)} MB`;  // 大于1MB显示MB
-                    }
-                    
-                    console.log(`  ✓ ${request.url.split('/').pop()} (${sizeStr})`);
-                }
-            }
-            
-            console.log(`总大小: ${(totalSize / 1024 / 1024).toFixed(2)} MB${opaqueCount > 0 ? ` (不含 ${opaqueCount} 个 opaque 文件)` : ''}`);
-            console.log('========================');
-            
-            return {
-                count: keys.length,
-                totalSize: totalSize,
-                files: keys.map(k => k.url)
-            };
-        } catch (error) {
-            console.error('获取缓存信息失败:', error);
-            return null;
-        }
     }
     
     /**
@@ -274,7 +105,8 @@ class CodeRunner {
             // 根据缓存状态显示不同的提示
             let okText = 'Python 环境加载完成！';
             
-            if (!hasCachedController && this.serviceWorkerReady) {
+            // 如果浏览器支持 SW 但当前页面未被接管，提示用户刷新
+            if (!hasCachedController && 'serviceWorker' in navigator) {
                 okText += '<br><small>💡 提示：刷新页面后加载速度将提升 10 倍！</small>';
             }
             
@@ -299,7 +131,6 @@ class CodeRunner {
             throw error;
         } finally {
             this.isLoading = false;
-            this.getCacheInfo()
         }
     }
     

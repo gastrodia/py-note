@@ -1,11 +1,141 @@
 {% extends "base.html" %}
 
 {% block scripts %}
-  {{ super() }}
-  <script src="{{ 'assets/js/code-runner.js' | url }}"></script>
+{{ super() }}
+
+<!-- Service Worker 注册脚本 -->
+<script>
+  // 注册 Service Worker（独立于业务逻辑）
+  (async function () {
+    try {
+      if (!('serviceWorker' in navigator)) {
+        console.warn('[SW] 当前浏览器不支持 Service Worker');
+        return false;
+      }
+      // 先测试 sw.js 是否可访问
+      const swPath = '/sw.js';
+      try {
+        const testResponse = await fetch(swPath, { method: 'HEAD' });
+        if (!testResponse.ok) {
+          console.error('[SW] ✗ 无法访问 sw.js 文件，HTTP 状态:', testResponse.status);
+          return false;
+        }
+      } catch (fetchError) {
+        console.error('[SW] ✗ 无法访问 sw.js 文件:', fetchError.message);
+        return false;
+      }
+
+      console.log('[SW] ⏳ 正在注册 Service Worker...');
+      const registration = await navigator.serviceWorker.register(swPath, {
+        scope: '/'
+      });
+
+      console.log('[SW] ✓ Service Worker 注册成功，作用域:', registration.scope);
+
+      // 等待 Service Worker 激活
+      await navigator.serviceWorker.ready;
+      console.log('[SW] ✓ Service Worker 已就绪');
+
+      // 检查是否已经有 controller（页面是否被 Service Worker 接管）
+      if (navigator.serviceWorker.controller) {
+        console.log('[SW] ✓ Service Worker 已接管页面，CDN 资源将从缓存加载');
+      } else {
+        console.log('[SW] ℹ Service Worker 已注册但未接管当前页面');
+        console.log('[SW] 💡 刷新页面（F5）后将启用缓存加速');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[SW] ✗ Service Worker 注册失败:', error);
+      return false;
+    }
+  })();
+
+  // 全局调试工具（可在控制台使用）
+  window.swDebug = {
+    // 清理缓存: swDebug.clearCache()
+    async clearCache() {
+      if (!('serviceWorker' in navigator)) {
+        console.warn('[Debug] 当前浏览器不支持 Service Worker');
+        return false;
+      }
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const messageChannel = new MessageChannel();
+        return new Promise((resolve) => {
+          messageChannel.port1.onmessage = (event) => {
+            if (event.data.success) {
+              console.log('[Debug] ✓ 缓存已清理');
+              resolve(true);
+            }
+          };
+          registration.active.postMessage(
+            { type: 'CLEAR_CACHE' },
+            [messageChannel.port2]
+          );
+        });
+      } catch (error) {
+        console.error('[Debug] 清理缓存失败:', error);
+        return false;
+      }
+    },
+
+    // 查看缓存状态: swDebug.getCacheInfo()
+    async getCacheInfo() {
+      if (!('caches' in window)) {
+        console.warn('[Debug] 当前浏览器不支持 Cache API');
+        return null;
+      }
+      try {
+        const cache = await caches.open('cache-v1');
+        const keys = await cache.keys();
+        
+        console.log('=== 缓存状态 ===');
+        console.log(`共缓存 ${keys.length} 个文件：`);
+        
+        let totalSize = 0;
+        let opaqueCount = 0;
+        for (const request of keys) {
+          const response = await cache.match(request);
+          if (response) {
+            const blob = await response.blob();
+            const size = blob.size;
+            totalSize += size;
+            
+            let sizeStr;
+            if (size === 0) {
+              sizeStr = `已缓存 ✓ (opaque)`;
+              opaqueCount++;
+            } else if (size < 1024) {
+              sizeStr = `${size} 字节`;
+            } else if (size < 1024 * 1024) {
+              sizeStr = `${(size / 1024).toFixed(2)} KB`;
+            } else {
+              sizeStr = `${(size / 1024 / 1024).toFixed(2)} MB`;
+            }
+            
+            console.log(`  ✓ ${request.url.split('/').pop()} (${sizeStr})`);
+          }
+        }
+        
+        console.log(`总大小: ${(totalSize / 1024 / 1024).toFixed(2)} MB${opaqueCount > 0 ? ` (不含 ${opaqueCount} 个 opaque 文件)` : ''}`);
+        console.log('================');
+        
+        return { count: keys.length, totalSize: totalSize };
+      } catch (error) {
+        console.error('[Debug] 获取缓存信息失败:', error);
+        return null;
+      }
+    }
+  };
+
+</script>
+
+<!-- 代码运行器 -->
+<script src="{{ 'assets/js/code-runner.js' | url }}"></script>
 {% endblock %}
 
 {% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ 'assets/css/code-runner.css' | url }}">
+{{ super() }}
+<link rel="stylesheet" href="{{ 'assets/css/code-runner.css' | url }}">
 {% endblock %}
