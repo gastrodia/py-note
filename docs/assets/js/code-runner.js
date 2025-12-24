@@ -33,7 +33,7 @@ class CodeRunner {
         
         try {
             // 先测试 sw.js 是否可访问
-            const swPath = '/assets/js/sw.js';
+            const swPath = '/sw.js';
             try {
                 const testResponse = await fetch(swPath, { method: 'HEAD' });
                 if (!testResponse.ok) {
@@ -49,7 +49,7 @@ class CodeRunner {
             
             console.log('[CodeRunner] ⏳ 正在注册 Service Worker...');
             const registration = await navigator.serviceWorker.register(swPath, {
-                scope: '/assets/js/'
+                scope: '/'
             });
             
             console.log('[CodeRunner] ✓ Service Worker 注册成功:', registration.scope);
@@ -123,7 +123,7 @@ class CodeRunner {
         }
         
         try {
-            const cache = await caches.open('pyodide-cache-v1');
+            const cache = await caches.open('cache-v1');
             const keys = await cache.keys();
             
             console.log('=== Pyodide 缓存状态 ===');
@@ -136,7 +136,20 @@ class CodeRunner {
                     const blob = await response.blob();
                     const size = blob.size;
                     totalSize += size;
-                    console.log(`  ✓ ${request.url.split('/').pop()} (${(size / 1024 / 1024).toFixed(2)} MB)`);
+                    
+                    // 根据文件大小选择合适的单位
+                    let sizeStr;
+                    if (size === 0) {
+                        sizeStr = '0 字节 ⚠️';  // 警告：可能缓存失败
+                    } else if (size < 1024) {
+                        sizeStr = `${size} 字节`;  // 小于1KB显示字节
+                    } else if (size < 1024 * 1024) {
+                        sizeStr = `${(size / 1024).toFixed(2)} KB`;  // 小于1MB显示KB
+                    } else {
+                        sizeStr = `${(size / 1024 / 1024).toFixed(2)} MB`;  // 大于1MB显示MB
+                    }
+                    
+                    console.log(`  ✓ ${request.url.split('/').pop()} (${sizeStr})`);
                 }
             }
             

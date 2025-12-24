@@ -1,6 +1,6 @@
 // Service Worker for caching CDN resources
 // 缓存策略：Cache First (缓存优先，适合不经常变化的大文件)
-const CACHE_NAME = 'cdn-cache-v1';
+const CACHE_NAME = 'cache-v1';
 
 // 需要缓存的 CDN 列表（可以是域名或 URL 模式）
 const CACHE_PATTERNS = [
