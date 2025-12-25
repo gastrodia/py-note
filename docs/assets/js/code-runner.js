@@ -320,7 +320,7 @@ class CodeRunner {
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
             // 添加运行按钮
-            this.addRunButtons();
+            // this.addRunButtons();
 
             // 监听页面内容变化（适配 Material 主题的即时加载）
             if (typeof document$ !== 'undefined') {

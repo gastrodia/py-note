@@ -1,55 +1,112 @@
 {% extends "base.html" %}
 
+{% block content %}
+{{ super() }}
+<h2 id="__comments">{{ lang.t("meta.comments") }}</h2>
+<div id="giscus"></div>
+
+<script>
+  function setGiscusTheme(theme) {
+
+    const iframe = document.querySelector('iframe.giscus-frame')
+    iframe.contentWindow.postMessage({
+      giscus: {
+        setConfig: { theme: theme }
+      }
+    }, 'https://giscus.app')
+  }
+
+  function schemeToTheme(scheme) {
+    return scheme === "default" ? "light" : "dark"
+  }
+
+  function initGiscus(theme) {
+    const script = document.createElement("script")
+
+    script.type = "text/javascript"
+    script.src = "https://giscus.app/client.js"
+    script.async = true
+    script.crossOrigin = "anonymous"
+    script.setAttribute("data-repo", "gastrodia/py-note")
+    script.setAttribute("data-repo-id", "R_kgDOQqTh2w")
+    script.setAttribute("data-category", "Announcements")
+    script.setAttribute("data-category-id", "DIC_kwDOQqTh284C0Oms")
+    script.setAttribute("data-mapping", "pathname")
+    script.setAttribute("data-strict", "0")
+    script.setAttribute("data-reactions-enabled", "1")
+    script.setAttribute("data-emit-metadata", "0")
+    script.setAttribute("data-input-position", "top")
+    script.setAttribute("data-theme", theme)
+    script.setAttribute("data-lang", "zh-CN")
+    document.querySelector("#giscus").appendChild(script)
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document$.subscribe((payload) => {
+      const themeDom = document.querySelector("[data-md-color-scheme]")
+      const scheme = themeDom.getAttribute("data-md-color-scheme")
+      console.log(scheme)
+      initGiscus(schemeToTheme(scheme))
+    });
+    component$.subscribe((component) => {
+      if (component && component.color && component.color.scheme) {
+        setGiscusTheme(schemeToTheme(component.color.scheme))
+      }
+    })
+  })
+</script>
+{% endblock %}
+
 {% block scripts %}
 {{ super() }}
 
 <!-- Service Worker 注册脚本 -->
 <script>
-  // 注册 Service Worker（独立于业务逻辑）
-  (async function () {
-    try {
-      if (!('serviceWorker' in navigator)) {
-        console.warn('[SW] 当前浏览器不支持 Service Worker');
-        return false;
-      }
-      // 先测试 sw.js 是否可访问
-      const swPath = '/sw.js';
+    // 注册 Service Worker（独立于业务逻辑）
+    (async function () {
       try {
-        const testResponse = await fetch(swPath, { method: 'HEAD' });
-        if (!testResponse.ok) {
-          console.error('[SW] ✗ 无法访问 sw.js 文件，HTTP 状态:', testResponse.status);
+        if (!('serviceWorker' in navigator)) {
+          console.warn('[SW] 当前浏览器不支持 Service Worker');
           return false;
         }
-      } catch (fetchError) {
-        console.error('[SW] ✗ 无法访问 sw.js 文件:', fetchError.message);
+        // 先测试 sw.js 是否可访问
+        const swPath = '/sw.js';
+        try {
+          const testResponse = await fetch(swPath, { method: 'HEAD' });
+          if (!testResponse.ok) {
+            console.error('[SW] ✗ 无法访问 sw.js 文件，HTTP 状态:', testResponse.status);
+            return false;
+          }
+        } catch (fetchError) {
+          console.error('[SW] ✗ 无法访问 sw.js 文件:', fetchError.message);
+          return false;
+        }
+
+        console.log('[SW] ⏳ 正在注册 Service Worker...');
+        const registration = await navigator.serviceWorker.register(swPath, {
+          scope: '/'
+        });
+
+        console.log('[SW] ✓ Service Worker 注册成功，作用域:', registration.scope);
+
+        // 等待 Service Worker 激活
+        await navigator.serviceWorker.ready;
+        console.log('[SW] ✓ Service Worker 已就绪');
+
+        // 检查是否已经有 controller（页面是否被 Service Worker 接管）
+        if (navigator.serviceWorker.controller) {
+          console.log('[SW] ✓ Service Worker 已接管页面，CDN 资源将从缓存加载');
+        } else {
+          console.log('[SW] ℹ Service Worker 已注册但未接管当前页面');
+          console.log('[SW] 💡 刷新页面（F5）后将启用缓存加速');
+        }
+
+        return true;
+      } catch (error) {
+        console.error('[SW] ✗ Service Worker 注册失败:', error);
         return false;
       }
-
-      console.log('[SW] ⏳ 正在注册 Service Worker...');
-      const registration = await navigator.serviceWorker.register(swPath, {
-        scope: '/'
-      });
-
-      console.log('[SW] ✓ Service Worker 注册成功，作用域:', registration.scope);
-
-      // 等待 Service Worker 激活
-      await navigator.serviceWorker.ready;
-      console.log('[SW] ✓ Service Worker 已就绪');
-
-      // 检查是否已经有 controller（页面是否被 Service Worker 接管）
-      if (navigator.serviceWorker.controller) {
-        console.log('[SW] ✓ Service Worker 已接管页面，CDN 资源将从缓存加载');
-      } else {
-        console.log('[SW] ℹ Service Worker 已注册但未接管当前页面');
-        console.log('[SW] 💡 刷新页面（F5）后将启用缓存加速');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('[SW] ✗ Service Worker 注册失败:', error);
-      return false;
-    }
-  })();
+    })();
 
   // 全局调试工具（可在控制台使用）
   window.swDebug = {
@@ -60,7 +117,7 @@
         return false;
       }
       try {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await navigator.ready;
         const messageChannel = new MessageChannel();
         return new Promise((resolve) => {
           messageChannel.port1.onmessage = (event) => {
@@ -89,10 +146,10 @@
       try {
         const cache = await caches.open('cache-v1');
         const keys = await cache.keys();
-        
+
         console.log('=== 缓存状态 ===');
         console.log(`共缓存 ${keys.length} 个文件：`);
-        
+
         let totalSize = 0;
         let opaqueCount = 0;
         for (const request of keys) {
@@ -101,7 +158,7 @@
             const blob = await response.blob();
             const size = blob.size;
             totalSize += size;
-            
+
             let sizeStr;
             if (size === 0) {
               sizeStr = `已缓存 ✓ (opaque)`;
@@ -113,14 +170,14 @@
             } else {
               sizeStr = `${(size / 1024 / 1024).toFixed(2)} MB`;
             }
-            
+
             console.log(`  ✓ ${request.url.split('/').pop()} (${sizeStr})`);
           }
         }
-        
+
         console.log(`总大小: ${(totalSize / 1024 / 1024).toFixed(2)} MB${opaqueCount > 0 ? ` (不含 ${opaqueCount} 个 opaque 文件)` : ''}`);
         console.log('================');
-        
+
         return { count: keys.length, totalSize: totalSize };
       } catch (error) {
         console.error('[Debug] 获取缓存信息失败:', error);
