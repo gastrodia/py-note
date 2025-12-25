@@ -42,9 +42,7 @@ nav:
     - 基础:
       - 基本数据类型: python/basic/data-types.md  # 去掉开头的/ + 补全.md后缀
       - 字符串与编码: python/basic/str.md
-    # - 容器:
-#    - 函数
-#  - Python 语言进阶:
+      - 数字与运算: python/basic/number.md
 
 
 # 自定义Markdown扩展（不变）
