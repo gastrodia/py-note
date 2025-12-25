@@ -43,6 +43,8 @@ nav:
       - 基本数据类型: python/basic/data-types.md  # 去掉开头的/ + 补全.md后缀
       - 字符串与编码: python/basic/str.md
       - 数字与运算: python/basic/number.md
+      - 列表与元组: python/basic/list.md
+      # - 流程控制: python/basic/if.md
 
 
 # 自定义Markdown扩展（不变）

@@ -170,7 +170,9 @@ class CodeRunner {
                     this.writeOutput(outputElement, 'success', '代码执行成功（无输出）');
                 }
             } catch (err) {
-                this.writeOutput(outputElement, 'error', `<strong>执行错误:</strong>\n<pre>${this.escapeHtml(err.message)}</pre>`);
+                // 解析并简化 Python 错误信息
+                const simplifiedError = this.parsePythonError(err.message);
+                this.writeOutput(outputElement, 'error', `<strong>执行错误:</strong>\n<pre>${this.escapeHtml(simplifiedError)}</pre>`);
             }
         } catch (err) {
             this.writeOutput(outputElement, 'error', `<strong>初始化错误:</strong>\n<pre>${this.escapeHtml(err.message)}</pre>`);
@@ -180,6 +182,66 @@ class CodeRunner {
             button.disabled = false;
             button.title = '在浏览器中运行此 Python 代码';
         }
+    }
+
+    /**
+     * 解析 Python 错误信息，提取有意义的部分
+     * @param {string} errorMessage - 完整的错误消息
+     * @returns {string} - 简化后的错误信息
+     */
+    parsePythonError(errorMessage) {
+        // 按行分割错误消息
+        const lines = errorMessage.split('\n');
+        
+        // 提取最后一行错误信息（例如：IndexError: list index out of range）
+        let lastErrorLine = '';
+        for (let i = lines.length - 1; i >= 0; i--) {
+            const line = lines[i].trim();
+            // 找到错误类型行（通常是 XxxError: ...）
+            if (line && /^[A-Z]\w*Error:/.test(line)) {
+                lastErrorLine = line;
+                break;
+            }
+        }
+        
+        // 提取用户代码相关的错误行（在 <exec> 中的）
+        const userCodeLines = [];
+        let inUserCode = false;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // 检测到用户代码的开始
+            if (line.includes('File "<exec>"')) {
+                inUserCode = true;
+                userCodeLines.push(line);
+            } else if (inUserCode) {
+                // 如果遇到错误类型行，添加后停止
+                if (trimmedLine && /^[A-Z]\w*Error:/.test(trimmedLine)) {
+                    userCodeLines.push(line);
+                    break;
+                }
+                // 如果是下一个 File，说明离开了用户代码
+                else if (line.includes('File "') && !line.includes('File "<exec>"')) {
+                    inUserCode = false;
+                } else {
+                    userCodeLines.push(line);
+                }
+            }
+        }
+        
+        // 构建简化的错误信息
+        if (userCodeLines.length > 0) {
+            return userCodeLines.join('\n');
+        }
+        
+        // 如果没有找到用户代码部分，至少返回错误类型
+        if (lastErrorLine) {
+            return lastErrorLine;
+        }
+        
+        // 如果都没找到，返回原始消息
+        return errorMessage;
     }
 
     /**
