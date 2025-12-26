@@ -80,11 +80,12 @@
     padding: 1em !important;
     background: transparent !important;
     border-radius: 0 !important;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    /* white-space: pre-wrap; */
+    /* word-wrap: break-word; */
     font-size: 0.85em;
     line-height: 1.6;
     color: inherit;
+    overflow-x: auto;
 }
 
 /* 输出状态样式 */
