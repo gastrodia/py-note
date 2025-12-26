@@ -45,6 +45,7 @@ nav:
       - 数字与运算: python/basic/number.md
       - 列表与元组: python/basic/list.md
       - 条件判断: python/basic/if.md
+      - 模式匹配: python/basic/match.md
 
 
 # 自定义Markdown扩展（不变）
