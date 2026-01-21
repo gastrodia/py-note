@@ -48,6 +48,8 @@ nav:
       - 模式匹配: python/basic/match.md
       - 循环: python/basic/for.md
       - 集合: python/basic/set.md
+      - 字典: python/basic/dict.md
+
       # - 函数: python/basic/function.md
 
 
