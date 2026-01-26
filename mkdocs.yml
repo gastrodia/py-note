@@ -49,8 +49,7 @@ nav:
       - 循环: python/basic/for.md
       - 集合: python/basic/set.md
       - 字典: python/basic/dict.md
-
-      # - 函数: python/basic/function.md
+      - 函数: python/basic/fn.md
 
 
 
