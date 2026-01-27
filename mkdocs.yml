@@ -50,6 +50,7 @@ nav:
       - 集合: python/basic/set.md
       - 字典: python/basic/dict.md
       - 函数: python/basic/fn.md
+      - 函数实战: python/basic/fn-example.md
 
 
 
